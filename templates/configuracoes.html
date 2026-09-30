@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="topbar"><div><div class="eyebrow">Definições</div><h1>Definições</h1><p>Valores financeiros sempre em CVE. O formato de data do sistema é dd/mm/aaaa.</p></div></div>
+<div class="card">
+  <form method="post"><div class="form-grid">
+    <div class="form-row"><label>Total de números</label><input type="number" value="{{ config.total_numeros }}" disabled></div>
+    <div class="form-row"><label>Números por aposta simples</label><input type="number" value="{{ config.numeros_por_jogo }}" disabled></div>
+    <div class="form-row"><label>Preço da aposta simples</label><input type="text" name="preco_aposta_simples" value="{{ config.preco_aposta_simples }}"><small class="hint">Exemplo: 30 CVE.</small></div>
+    <div class="form-row"><label>Preço Joker</label><input type="text" name="preco_joker" value="{{ config.preco_joker }}"><small class="hint">Exemplo: 70 CVE.</small></div>
+    <div class="form-row"><label>Orçamento semanal</label><input type="text" name="orcamento_semanal" value="{{ config.orcamento_semanal }}"></div>
+    <div class="form-row"><label>Moeda</label><input type="text" value="CVE" disabled></div>
+  </div><button class="btn mt" type="submit">Guardar definições</button></form>
+</div>
+<div class="card mt"><h2>Probabilidade teórica</h2><p>Uma aposta simples 6/45 tem {{ total_combinacoes_simples }} combinações possíveis. O sistema usa isso apenas como referência matemática; a geração estatística semanal não garante resultado.</p></div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="topbar"><div><div class="eyebrow">Estratégias</div><h1>Configuração das Estratégias</h1><p>Estratégias matemáticas adaptadas para o Totoloto 6/45, sem promessa de resultado.</p></div></div>
+<div class="grid grid-2 mb">
+  <div class="card"><h2>Base estatística aplicada</h2><p>O sistema usa frequência histórica, ausência real por quantidade de sorteios registados, janelas recentes de 5 e 10 sorteios, paridade, soma, zonas, sequências e padrões populares.</p></div>
+  <div class="card"><h2>Regra de segurança</h2><p>As estratégias servem para organizar a geração estatística semanal. Nenhuma página trata score como probabilidade de acerto.</p></div>
+</div>
+<div class="card"><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Descrição</th><th>Freq.</th><th>Ausência</th><th>Equilíbrio</th><th>Soma</th><th>Baixa popularidade</th><th>Activa</th></tr></thead><tbody>
+{% for e in estrategias %}<tr><td><strong>{{ e.nome }}</strong></td><td>{{ e.descricao }}</td><td>{{ e.peso_frequencia }}</td><td>{{ e.peso_ausencia }}</td><td>{{ e.peso_equilibrio }}</td><td>{{ e.peso_soma }}</td><td>{{ e.peso_baixa_popularidade }}</td><td>{{ 'Sim' if e.ativa else 'Não' }}</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

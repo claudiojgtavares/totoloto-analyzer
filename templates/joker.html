@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="eyebrow">Joker</div>
+    <h1>Joker Analytics</h1>
+    <p>Registe ou importe resultados Joker e acompanhe estatísticas por posição e por dígito. O Joker é tratado como sequência de 6 dígitos.</p>
+  </div>
+  <div class="actions">
+    <a class="btn secondary" href="{{ url_for('modelo_importacao_joker') }}">Baixar modelo CSV</a>
+  </div>
+</div>
+
+<div class="grid grid-4">
+  <div class="card"><div class="stat-label">Resultados registados</div><div class="stat-number">{{ resumo.total }}</div></div>
+  <div class="card"><div class="stat-label">Último Joker</div><div class="stat-number joker-number">{{ resumo.ultimo.numero_joker if resumo.ultimo else '-' }}</div></div>
+  <div class="card"><div class="stat-label">Mais quente</div><div class="stat-number">{% if resumo.mais_quente %}P{{ resumo.mais_quente.posicao }}: {{ resumo.mais_quente.digito }}{% else %}-{% endif %}</div></div>
+  <div class="card"><div class="stat-label">Mais atrasado</div><div class="stat-number">{% if resumo.mais_atrasado %}P{{ resumo.mais_atrasado.posicao }}: {{ resumo.mais_atrasado.digito }}{% else %}-{% endif %}</div></div>
+</div>
+
+<div class="grid grid-2 mt">
+  <div class="card">
+    <h2>Registar resultado Joker</h2>
+    <p class="report-note">Use esta opção para inserir um concurso individualmente.</p>
+    <form method="post">
+      <input type="hidden" name="acao" value="registar">
+      <div class="form-grid">
+        <div class="form-row"><label>Concurso</label><input type="text" name="concurso" placeholder="49/2025" required></div>
+        <div class="form-row"><label>Data do sorteio</label><input type="text" name="data_sorteio" class="date-br" placeholder="dd/mm/aaaa" inputmode="numeric" required></div>
+        <div class="form-row"><label>Número Joker</label><input type="text" name="numero_joker" placeholder="056708" maxlength="6" pattern="\d{6}" inputmode="numeric" required><small class="hint">Use texto para preservar zeros à esquerda.</small></div>
+        <div class="form-row"><label>Categoria</label><input type="text" name="premio" value="1.º Prémio"></div>
+      </div>
+      <button class="btn mt" type="submit">Guardar Joker e actualizar estatística</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Importar histórico Joker</h2>
+    <p class="report-note">Use esta opção para importar vários concursos de uma só vez. O formato recomendado é: <strong>Concurso | Data | Joker | Categoria</strong>.</p>
+    <form method="post" enctype="multipart/form-data">
+      <input type="hidden" name="acao" value="importar_ficheiro">
+      <div class="form-row">
+        <label>Ficheiro Excel, CSV, TXT ou PDF com texto legível</label>
+        <input type="file" name="arquivo_joker" accept=".xlsx,.csv,.txt,.pdf">
+        <small class="hint">Exemplo: 49/2025 ; 06/12/2025 ; 989682 ; 1.º Prémio</small>
+      </div>
+      <button class="btn mt" type="submit">Importar ficheiro Joker</button>
+    </form>
+
+    <hr class="soft-sep">
+
+    <form method="post">
+      <input type="hidden" name="acao" value="importar_texto">
+      <div class="form-row">
+        <label>Ou cole texto copiado do site</label>
+        <textarea name="texto_joker" rows="6" placeholder="Concurso 49/2025&#10;Sábado, 06 DEZ 2025&#10;1.º Prémio&#10;9 8 9 6 8 2"></textarea>
+        <small class="hint">Também aceita linhas como: 49/2025;06/12/2025;989682;1.º Prémio</small>
+      </div>
+      <button class="btn secondary mt" type="submit">Importar texto colado</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid grid-2 mt">
+  <div class="card">
+    <h2>Gerar combinações Joker</h2>
+    <p>Usa frequência por posição, ausências, janelas recentes e equilíbrio de dígitos. Não representa garantia de prémio.</p>
+    <form method="post">
+      <input type="hidden" name="acao" value="gerar">
+      <div class="form-grid">
+        <div class="form-row"><label>Quantidade</label><input type="number" name="quantidade" min="1" max="30" value="{{ selecionado.quantidade }}" required></div>
+        <div class="form-row"><label>Estratégia</label><select name="estrategia">
+          {% for nome in ['Equilibrada','Frequentes','Atrasados','Mista','Conservadora','Agressiva','Aleatória Inteligente'] %}
+            <option value="{{ nome }}" {{ 'selected' if selecionado.estrategia == nome else '' }}>{{ nome }}</option>
+          {% endfor %}
+        </select></div>
+      </div>
+      <button class="btn mt" type="submit">Gerar Joker estatístico</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Como preparar o histórico de 2025</h2>
+    <p>Não precisa inserir tudo manualmente. Pode copiar os resultados do site e colar na caixa acima, ou montar uma folha Excel com as colunas:</p>
+    <div class="codebox">Concurso | Data | Joker | Categoria</div>
+    <p>Quanto mais concursos forem importados, mais úteis ficam frequência, ausência e índice quente/atraso.</p>
+  </div>
+</div>
+
+{% if combinacoes %}
+<div class="card mt">
+  <h2>Combinações Joker geradas</h2>
+  <div class="table-wrap"><table><thead><tr><th>Joker</th><th>Estratégia usada</th><th>Score técnico (%)</th><th>Observação</th></tr></thead><tbody>
+    {% for c in combinacoes %}
+    <tr><td><div class="number-row">{% for d in c.digitos %}<span class="chip joker-chip">{{ d }}</span>{% endfor %}</div></td><td>{{ c.estrategia }}</td><td>{{ '%.2f'|format(c.score|float) }}%</td><td>{{ c.observacao }}</td></tr>
+    {% endfor %}
+  </tbody></table></div>
+</div>
+{% endif %}
+
+<div class="grid grid-2 mt">
+  <div class="card">
+    <h2>Histórico Joker</h2>
+    <div class="table-wrap"><table><thead><tr><th>Concurso</th><th>Data</th><th>Joker</th><th>Categoria</th></tr></thead><tbody>
+      {% for r in resultados %}
+      <tr><td>{{ r.concurso }}</td><td>{{ r.data_sorteio|date_br }}</td><td><strong>{{ r.numero_joker }}</strong></td><td>{{ r.premio }}</td></tr>
+      {% else %}<tr><td colspan="4">Nenhum resultado Joker registado.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+
+  <div class="card">
+    <h2>Como ler a estatística</h2>
+    <p><strong>Posição</strong> é a casa do dígito dentro do Joker: P1 P2 P3 P4 P5 P6.</p>
+    <p><strong>Últ. 5</strong> e <strong>Últ. 10</strong> ficam fortes quando houver histórico registado no sistema.</p>
+    <p class="notice">A análise Joker trabalha com histórico e score técnico. Não é promessa de prémio nem probabilidade garantida.</p>
+  </div>
+</div>
+
+<div class="card mt">
+  <h2>Estatística por posição e dígito</h2>
+  <div class="table-wrap"><table><thead><tr><th>Posição</th><th>Dígito</th><th>Saídas</th><th>%</th><th>Último concurso</th><th>Data</th><th>Ausências</th><th>Últ. 5</th><th>Últ. 10</th><th>Índice quente</th><th>Índice atraso</th></tr></thead><tbody>
+    {% for e in estatisticas_joker %}
+    <tr><td>P{{ e.posicao }}</td><td><span class="chip soft">{{ e.digito }}</span></td><td>{{ e.total_saidas }}</td><td>{{ e.percentual|pct_br }}</td><td>{{ e.ultimo_concurso or '-' }}</td><td>{{ e.data_ultimo_sorteio|date_br }}</td><td>{{ e.ausencias }}</td><td>{{ e.frequencia_ultimos_5 }}</td><td>{{ e.frequencia_ultimos_10 }}</td><td>{{ e.indice_quente }}</td><td>{{ e.indice_atraso }}</td></tr>
+    {% else %}<tr><td colspan="11">Execute python criar_banco.py para criar a base Joker.</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% endblock %}

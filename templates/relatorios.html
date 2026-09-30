@@ -1,0 +1,26 @@
+
+{% extends 'base.html' %}
+{% block content %}
+<div class="topbar">
+  <div>
+    <div class="eyebrow">Relatórios</div>
+    <h1>Relatórios</h1>
+    <p>Gere relatórios em PDF e Excel a partir das apostas guardadas.</p>
+  </div>
+</div>
+<div class="grid grid-2">
+  <div class="card">
+    <h2>Geração Estatística Semanal</h2>
+    <p>Exporta as apostas geradas, agrupadas por estratégia usada. O PDF agora mostra: estratégia, concurso, tipo, números, score técnico (%), custo, Joker e custo final em CVE.</p>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('exportar_pdf') }}">PDF organizado</a>
+      <a class="btn secondary" href="{{ url_for('exportar_excel') }}">Excel</a>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Como o PDF fica organizado</h2>
+    <p>Primeiro aparece o resumo geral; depois cada bloco vem com o nome da estratégia usada e a lista das apostas correspondentes.</p>
+    <p class="notice">Score é uma nota técnica. Não representa probabilidade de ganho.</p>
+  </div>
+</div>
+{% endblock %}

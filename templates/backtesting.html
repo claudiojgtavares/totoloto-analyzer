@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="topbar"><div><div class="eyebrow">PADRÃO HISTÓRICO — não é previsão</div><h1>Backtesting Walk-Forward</h1><p>Cada concurso usa apenas o passado. A exploração normal usa os primeiros 80% do histórico, reservando os últimos 20% para avaliação final.</p></div></div>
+
+<div class="card mb">
+  <form method="post" data-backtesting><div class="form-grid">
+    <div class="form-row"><label>Estratégia</label><select name="estrategia">{% for e in estrategias %}<option value="{{ e.nome }}" {{ 'selected' if selecionado.estrategia == e.nome else '' }}>{{ e.nome }}</option>{% endfor %}</select></div>
+    <div class="form-row"><label>Bilhetes por concurso</label><input type="number" name="quantidade_jogos" min="1" max="20" value="{{ selecionado.quantidade_jogos }}"><small>Limite dinâmico: até 420 linhas simples por concurso.</small></div>
+    <div class="form-row"><label>Tipo / números</label><select name="qtd_numeros"><option value="6" {{ 'selected' if selecionado.qtd_numeros == 6 else '' }}>Simples - 6 números (1 linha)</option><option value="7" {{ 'selected' if selecionado.qtd_numeros == 7 else '' }}>Múltipla - 7 números (7 linhas)</option><option value="8" {{ 'selected' if selecionado.qtd_numeros == 8 else '' }}>Múltipla - 8 números (28 linhas)</option><option value="9" {{ 'selected' if selecionado.qtd_numeros == 9 else '' }}>Múltipla - 9 números (84 linhas)</option><option value="10" {{ 'selected' if selecionado.qtd_numeros == 10 else '' }}>Múltipla - 10 números (210 linhas)</option></select></div>
+    <div class="form-row"><label class="checkbox-line"><input type="checkbox" name="incluir_joker" value="1" {{ 'checked' if selecionado.incluir_joker else '' }}> Incluir Joker apenas no custo</label></div>
+    <div class="form-row"><label>Concursos-alvo</label><input type="number" name="limite_concursos" min="1" max="500" value="{{ selecionado.limite_concursos }}"><small>Testa apenas os últimos N concursos, mantendo o histórico anterior.</small></div>
+    <div class="form-row"><label class="checkbox-line"><input type="checkbox" name="modo" value="assíncrono"> Executar em segundo plano (polling)</label></div>
+  </div><button class="btn mt" type="submit">Executar teste histórico</button></form>
+</div>
+
+<section class="card mb" aria-labelledby="titulo-protocolo">
+  <h2 id="titulo-protocolo">FATO MATEMÁTICO — controlo nulo 6/45</h2>
+  <p>Repete exatamente a estratégia, os 20 baselines e o limite de 420 linhas acima. PADRÃO HISTÓRICO: o desempenho observado não prevê concursos nem garante vantagem futura.</p>
+  <form id="protocolo-form" method="post" action="{{ url_for('preparar_protocolo_http') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+      <div class="form-row"><label>Âmbito<select name="ambito"><option value="holdout">Holdout confirmatório — últimos 20%</option><option value="exploratorio">Exploratório — últimos N de todo o histórico</option></select></label></div>
+      <div class="form-row"><label>Históricos sintéticos (B)<input name="n_sinteticos" type="number" min="1" max="999" value="199" required></label></div>
+      <div class="form-row"><label>Seed<input name="seed" type="number" min="0" value="2026" required></label></div>
+      <div class="form-row"><label>Workers<input name="workers" type="number" min="1" max="4" value="4" required></label></div>
+      <div class="form-row"><label>Prazo global (segundos)<input name="timeout_global" type="number" min="1" placeholder="7200 apenas no holdout"></label><small>Exploratório exige prazo explícito. A estimativa pode bloquear o arranque.</small></div>
+      <div class="form-row"><label>Prazo por avaliação (segundos)<input name="timeout_simulacao" type="number" min="1" value="300" required></label></div>
+    </div>
+    <label class="checkbox-line"><input type="checkbox" name="holdout_inedito" value="1"> Reservei os últimos 20% antes de escolher os parâmetros e não os usei para ajustes.</label>
+    <p>Os parâmetros e o limite de concursos vêm do formulário acima. O limite deve cobrir todo o holdout. A exploração sobre todo o histórico expõe esses concursos e impede a sua posterior confirmação. Exposição anterior fora deste protocolo não pode ser detetada automaticamente.</p>
+    <button class="btn" type="submit">Preparar e estimar (sem avaliar)</button>
+    <button class="btn" id="protocolo-confirmar" type="button" hidden>Confirmar configuração e iniciar</button>
+  </form>
+  <pre id="protocolo-estado" aria-live="polite" style="white-space:pre-wrap">Sem protocolo iniciado. Requer histórico bruto.</pre>
+  <p>Timeout, erro ou B incompleto: sem p-valor final. O intervalo nulo é descritivo da distribuição simulada, não um intervalo de desempenho futuro. O p-valor usa a cauda superior, com resolução 1/(B+1).</p>
+</section>
+
+<div class="grid grid-3">
+  <div class="card"><div class="stat-label">Média por linha</div><div class="stat-number">{{ resumo.media_acertos }}</div><p>IC 95%: {{ resumo.media_acertos_ic_95[0] }}—{{ resumo.media_acertos_ic_95[1] }} · teórico 0,8</p></div>
+  <div class="card"><div class="stat-label">Baseline uniforme</div><div class="stat-number">{{ resumo.baseline.media_acertos }}</div><p>Média de {{ resumo.baseline_repeticoes }} controlos/concurso · diferença {{ resumo.diferenca_baseline }} · IC {{ resumo.diferenca_baseline_ic_95[0] }}—{{ resumo.diferenca_baseline_ic_95[1] }}</p></div>
+  <div class="card"><div class="stat-label">Melhor linha</div><div class="stat-number">{{ resumo.maior_acerto }}</div><p>Máximo de 6 números</p></div>
+</div>
+
+<div class="grid grid-3 mt">
+  <div class="card"><div class="stat-label">Linhas com 3+</div><div class="stat-number">{{ resumo.jogos_3_mais }}</div><p>Taxa {{ (resumo.taxa_3_mais * 100)|round(3) }}% · IC {{ (resumo.taxa_3_mais_ic_95[0] * 100)|round(3) }}—{{ (resumo.taxa_3_mais_ic_95[1] * 100)|round(3) }}%</p></div>
+  <div class="card"><div class="stat-label">Volume testado</div><div class="stat-number">{{ resumo.linhas_testadas }}</div><p>{{ resumo.bilhetes_testados }} bilhetes · {{ resumo.concursos_testados }} concursos</p></div>
+  <div class="card"><div class="stat-label">Custo simulado</div><div class="stat-number">{{ format_cve(resumo.custo_simulado) }}</div><p>Retorno/ROI: indisponível sem quinhões oficiais</p></div>
+</div>
+
+<div class="grid grid-2 mt">
+  <div class="card">
+    <h2>Prémios teóricos por categoria</h2>
+    <div class="table-wrap"><table><thead><tr><th>Categoria</th><th>Estratégia</th><th>Uniforme</th></tr></thead><tbody>
+      <tr><td>1.º — 6 acertos</td><td>{{ resumo.premios_por_categoria.primeiro }}</td><td>{{ resumo.baseline.premios.primeiro }}</td></tr>
+      <tr><td>2.º — 5 acertos</td><td>{{ resumo.premios_por_categoria.segundo }}</td><td>{{ resumo.baseline.premios.segundo }}</td></tr>
+      <tr><td>3.º — 4 acertos</td><td>{{ resumo.premios_por_categoria.terceiro }}</td><td>{{ resumo.baseline.premios.terceiro }}</td></tr>
+      <tr><td>4.º — 3 acertos</td><td>{{ resumo.premios_por_categoria.quarto }}</td><td>{{ resumo.baseline.premios.quarto }}</td></tr>
+    </tbody></table></div>
+  </div>
+  <div class="card">
+    <h2>Cobertura média da carteira</h2>
+    <p><strong>{{ resumo.cobertura_media.numeros_unicos or 0 }}</strong> números distintos · <strong>{{ resumo.cobertura_media.pares_unicos or 0 }}</strong> pares · <strong>{{ resumo.cobertura_media.trincas_unicas or 0 }}</strong> trincas.</p>
+    <p>Sobreposição média entre pools: <strong>{{ resumo.cobertura_media.sobreposicao_media or 0 }}</strong>. Linhas duplicadas: <strong>{{ resumo.cobertura_media.linhas_duplicadas or 0 }}</strong>.</p>
+    <p>Concursos ignorados: <strong>{{ resumo.concursos_ignorados }}</strong>{% if resumo.erros %} · {{ resumo.erros }}{% endif %}</p>
+  </div>
+</div>
+
+<div class="card mt"><h2>Leitura correta — PADRÃO HISTÓRICO</h2>{% if resumo.incompleto %}<p class="notice">Resultado incompleto: houve concursos não avaliados. Não interpretar como teste completo.</p>{% endif %}<p>{{ resumo.observacao }}</p><p class="notice">Uma diferença positiva num histórico curto não prova poder preditivo. Compare o intervalo de confiança, o baseline e a estabilidade em novos concursos.</p></div>
+
+<div class="card mt"><h2>Últimos concursos testados</h2><div class="table-wrap"><table><thead><tr><th>Concurso</th><th>Data</th><th>Resultado</th><th>Bilhetes</th><th>Linhas</th><th>Média</th><th>Melhor</th><th>Baseline</th><th>Prémios 1.º/2.º/3.º/4.º</th></tr></thead><tbody>
+{% for d in resumo.detalhes %}<tr><td>{{ d.concurso }}</td><td>{{ d.data_sorteio|date_br }}</td><td><div class="number-row">{% for n in d.resultado %}<span class="chip soft">{{ n }}</span>{% endfor %}</div></td><td>{{ d.jogos_testados }}</td><td>{{ d.linhas_testadas }}</td><td>{{ d.media_acertos }}</td><td>{{ d.melhor_acerto }}</td><td>{{ d.baseline_media }}</td><td>{{ d.premios.primeiro }}/{{ d.premios.segundo }}/{{ d.premios.terceiro }}/{{ d.premios.quarto }}</td></tr>{% else %}<tr><td colspan="9">Registe histórico bruto suficiente para visualizar o teste.</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

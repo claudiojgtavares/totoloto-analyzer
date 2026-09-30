@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="topbar"><div><div class="eyebrow">Estat&iacute;sticas</div><h1>Estat&iacute;stica dos N&uacute;meros</h1><p>Frequ&ecirc;ncia, percentual, janelas recentes, atraso e compara&ccedil;&atilde;o com a m&eacute;dia te&oacute;rica do Totoloto 6/45.</p></div></div>
+<div class="notice mb">Para maior exatid&atilde;o, cadastre ou importe o hist&oacute;rico completo de sorteios. A probabilidade te&oacute;rica de um n&uacute;mero aparecer em um sorteio 6/45 &eacute; 13,33%.</div>
+<div class="card mb"><h2>Rigor estat&iacute;stico</h2><p><strong>PADR&Atilde;O HIST&Oacute;RICO:</strong> frequ&ecirc;ncias suavizadas por Laplace evitam &iacute;ndices inst&aacute;veis em amostras pequenas; n&atilde;o s&atilde;o previs&otilde;es.</p><p><strong>FATO MATEM&Aacute;TICO:</strong> quando se testam muitos n&uacute;meros, use corre&ccedil;&atilde;o Benjamini-Hochberg (FDR) ou Holm-Bonferroni; a corre&ccedil;&atilde;o escolhida deve ser indicada no relat&oacute;rio.</p>{% if ajuste_uniforme %}<p><strong>FATO MATEM&Aacute;TICO:</strong> qui-quadrado calibrado por simula&ccedil;&atilde;o nula: X&sup2; {{ '%.3f'|format(ajuste_uniforme.qui_quadrado) }}, p={{ '%.4f'|format(ajuste_uniforme.p_valor_empirico) }}. Isto n&atilde;o garante vi&eacute;s mec&acirc;nico nem ganho.</p>{% else %}<p>O teste de ajuste requer hist&oacute;rico bruto com total de sa&iacute;das m&uacute;ltiplo de 6.</p>{% endif %}</div>
+<div class="card">
+  <div class="table-wrap"><table><thead><tr><th>N&uacute;mero</th><th>Sa&iacute;das</th><th>% Sa&iacute;das</th><th>Te&oacute;rica</th><th>Desvio</th><th>&Uacute;ltimo Sorteio</th><th>Data</th><th>Aus&ecirc;ncias</th><th>&Uacute;lt. 5</th><th>&Uacute;lt. 10</th><th>&Iacute;ndice quente</th><th>&Iacute;ndice atraso</th></tr></thead><tbody>
+  {% for e in estatisticas %}
+    <tr><td><span class="chip soft">{{ e.numero }}</span></td><td>{{ e.numero_saidas }}</td><td>{{ e.percentual_saidas|pct_br }}</td><td>{{ e.probabilidade_teorica|pct_br }}</td><td>{{ e.desvio_frequencia or 0 }}</td><td>{{ e.ultimo_sorteio or '-' }}</td><td>{{ e.data_ultimo_sorteio|date_br }}</td><td>{{ e.ausencias }}</td><td>{{ e.frequencia_ultimos_5 or 0 }}</td><td>{{ e.frequencia_ultimos_10 or 0 }}</td><td>{{ e.indice_quente or 0 }}</td><td>{{ e.indice_atraso or 0 }}</td></tr>
+  {% else %}<tr><td colspan="12">Nenhuma estat&iacute;stica carregada.</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% endblock %}

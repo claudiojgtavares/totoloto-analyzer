@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="topbar"><div><div class="eyebrow">Importação</div><h1>Importar Estatísticas</h1><p>Importe CSV, Excel ou PDF com tabela legível. Para maior exactidão, prefira histórico completo de sorteios.</p></div></div>
+<div class="card">
+  <form method="post" enctype="multipart/form-data">
+    <div class="form-row"><label>Ficheiro</label><input type="file" name="arquivo" accept=".csv,.xlsx,.pdf" required></div>
+    <button class="btn mt" type="submit">Importar estatística</button>
+  </form>
+</div>
+<div class="card mt"><h2>Colunas esperadas</h2><p>Número, Número de Saídas, % de Saídas, Último Sorteio, Data do Sorteio e Ausências. Datas podem vir como dd/mm/aaaa, 23-mai-26 ou serial Excel. O campo Último Sorteio aceita 21/2026 e corrige conversões como set-26 para 9/2026.</p></div>
+{% endblock %}

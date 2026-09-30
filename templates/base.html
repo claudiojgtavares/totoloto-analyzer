@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or 'Totoloto Analyzer Offline' }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v='stitch-layout-2') }}">
+</head>
+<body>
+{% from 'components/icons.html' import icon %}
+{% set page = (nav_items|selectattr('key', 'equalto', active|default('dashboard'))|list|first) %}
+<a class="skip-link" href="#page-content">Saltar para o conteúdo</a>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <a class="brand-mark" href="{{ url_for('dashboard') }}" aria-label="Totoloto Analyzer — início">{{ icon('estatisticas') }}</a>
+      <div>
+        <div class="brand-title">Totoloto Analyzer</div>
+        <div class="brand-subtitle">Análise de lotarias · Cabo Verde</div>
+      </div>
+    </div>
+    <details class="navigation" id="navigation" open>
+    <summary class="menu-toggle">{{ icon('menu') }} Menu <span>Explorar aplicação</span></summary>
+    <div class="nav-caption">ESPAÇO DE ANÁLISE</div>
+    <nav class="nav" aria-label="Navegação principal">
+      {% for item in nav_items %}
+        <a class="{{ 'active' if active == item.key else '' }}" href="{{ item.url }}" {% if active == item.key %}aria-current="page"{% endif %}>{{ icon(item.key) }}<span>{{ item.label }}</span></a>
+      {% endfor %}
+    </nav>
+    </details>
+    <div class="sidebar-bottom"><span class="badge">Totoloto 6/45</span><span class="badge">CVE</span>
+    <p class="footer-note">Gera&ccedil;&atilde;o estat&iacute;stica semanal. O score n&atilde;o &eacute; probabilidade de ganhar.</p>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="app-topbar">
+      <div class="app-breadcrumb">
+        <span class="app-breadcrumb-brand">O meu espaço</span>
+        <span class="app-breadcrumb-separator" aria-hidden="true">&rsaquo;</span>
+        <span class="app-breadcrumb-current">{{ title or (page.label if page else 'Painel') }}</span>
+      </div>
+      <div class="app-topbar-actions">
+        <span class="connection-pill">Utilização local</span>
+        <a class="topbar-settings" href="{{ url_for('configuracoes') }}" aria-label="Abrir definições">{{ icon('configuracoes') }}</a>
+      </div>
+    </header>
+    <div class="page-content" id="page-content" tabindex="-1">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert {{ 'error' if category == 'error' else '' }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/layout.js', v='2') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('form[method="post"], form[method="POST"]').forEach(function (form) {
+      if (!form.querySelector('input[name="csrf_token"]')) {
+        const input = document.createElement('input');
+        input.type = 'hidden'; input.name = 'csrf_token'; input.value = '{{ csrf_token() }}';
+        form.appendChild(input);
+      }
+    });
+  });
+</script>
+</body>
+</html>

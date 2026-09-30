@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="topbar"><div><div class="eyebrow">Análise combinatória</div><h1>Wheeling e cobertura</h1><p>Distribua um conjunto de números por linhas simples de seis números e verifique a cobertura de pares ou trincas.</p></div></div>
+<div class="notice mb">Modo análise: as linhas não são guardadas como apostas nem marcadas como compradas. Esta simulação não altera o Orçamento comprometido nem o Gasto real em apostas compradas. O Joker não está incluído.</div>
+{% if erro %}<div class="alert error" role="alert">{{ erro }}</div>{% endif %}
+<div class="card mb">
+  <form method="post" action="{{ url_for('wheeling') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+      <div class="form-row"><label for="wheel-pool">Conjunto de números (6 a 12)</label><input id="wheel-pool" name="pool" value="{{ selecionado.pool }}" maxlength="200" placeholder="1, 5, 9, 14, 22, 30, 38, 45" required><small>Números distintos de 1 a 45, separados por espaços, vírgulas ou ponto e vírgula. Este conjunto não é um bilhete múltiplo.</small></div>
+      <div class="form-row"><label for="wheel-nivel">Cobertura pretendida</label><select id="wheel-nivel" name="nivel"><option value="2" {{ 'selected' if selecionado.nivel == '2' else '' }}>Pares (2 números)</option><option value="3" {{ 'selected' if selecionado.nivel == '3' else '' }}>Trincas (3 números)</option></select></div>
+      <div class="form-row"><label for="wheel-modo">Limitar a carteira por</label><select id="wheel-modo" name="modo_limite"><option value="linhas" {{ 'selected' if selecionado.modo_limite == 'linhas' else '' }}>Máximo de linhas</option><option value="orcamento" {{ 'selected' if selecionado.modo_limite == 'orcamento' else '' }}>Orçamento para esta simulação</option></select></div>
+      <div class="form-row" id="wheel-campo-linhas"><label for="wheel-linhas">Máximo de linhas simples</label><input id="wheel-linhas" name="quantidade_linhas" type="number" min="1" max="420" value="{{ selecionado.quantidade_linhas }}"><small>Usado apenas no modo por linhas.</small></div>
+      <div class="form-row" id="wheel-campo-orcamento"><label for="wheel-orcamento">Orçamento para esta simulação (CVE)</label><input id="wheel-orcamento" name="orcamento" inputmode="decimal" maxlength="32" value="{{ selecionado.orcamento }}" placeholder="1.000,50"><small>Usado apenas no modo por orçamento. Até 999.999.999,99 CVE; o preço por linha vem das Definições. Não é o saldo da banca.</small></div>
+    </div>
+    <button class="btn mt" type="submit">Construir e verificar cobertura</button>
+    <p>A construção termina mais cedo se cobrir todos os pares ou trincas escolhidos. O valor que sobrar fica por utilizar; não é necessário gastar todo o orçamento.</p>
+    <p>Prazo de construção: 10 segundos. Se for excedido, são apresentadas apenas as linhas já construídas, identificadas como resultado incompleto.</p>
+  </form>
+</div>
+<div class="card mb">
+  <p><strong>HEURÍSTICA:</strong> o construtor escolhe a linha que acrescenta mais pares ou trincas ainda não cobertos. É uma aproximação; não garante o menor número possível de linhas.</p>
+  <p><strong>FATO MATEMÁTICO:</strong> o certificado conta todos os pares ou trincas do conjunto escolhido e verifica quais aparecem nas linhas apresentadas. Não mede a probabilidade de esses números saírem.</p>
+  <p>Cobrir pares não garante prémio: as categorias começam nos três acertos. Escolher números pelo histórico é uma <strong>HEURÍSTICA</strong>; cada concurso é independente e esta ferramenta não prevê resultados.</p>
+</div>
+{% if resultado %}
+{% set c = resultado.certificado %}
+<section class="card mb" aria-labelledby="wheel-resultado">
+  <h2 id="wheel-resultado">Certificado de cobertura — {{ c.rotulo }}</h2>
+  {% if resultado.incompleto %}<p class="alert error" role="status">Construção interrompida pelo prazo. Resultado incompleto: o certificado verifica apenas as linhas já produzidas.</p>
+  {% elif c.cobertura_completa %}<p class="notice" role="status">Cobertura completa verificada (100%).</p>
+  {% elif resultado.motivo == 'limite_orcamento' %}<p class="notice" role="status">Limite do orçamento atingido. Cobertura parcial: o valor restante não permite outra linha.</p>
+  {% elif resultado.motivo == 'limite_tecnico' %}<p class="notice" role="status">Limite técnico de 420 linhas atingido. Cobertura parcial: permanece orçamento não utilizado.</p>
+  {% else %}<p class="notice" role="status">Limite de linhas atingido. Cobertura parcial: não existe garantia para todos os subconjuntos do conjunto escolhido.</p>{% endif %}
+  <p>Conjunto: {{ c.numeros_pool|join(', ') }}. Nível: {{ 'pares' if c.nivel == 2 else 'trincas' }}.</p>
+  <p>Cobertos: <strong>{{ c.cobertos }} / {{ c.subconjuntos_totais }}</strong> ({{ (c.cobertura * 100)|pct_br }}). Descobertos: <strong>{{ c.descobertos }}</strong>.</p>
+  {% if resultado.garantia %}<p class="notice">{{ resultado.garantia }}</p>{% endif %}
+  <p>Linhas simples: {{ resultado.linhas|length }} / {{ resultado.max_linhas }} permitidas. Custo simulado: <strong>{{ formatar_cve_exato(resultado.custo_simulado) }}</strong> ({{ formatar_cve_exato(resultado.preco_linha) }} por linha).</p>
+  {% if resultado.orcamento is defined %}
+  <p>Orçamento indicado: <strong>{{ formatar_cve_exato(resultado.orcamento) }}</strong>. Saldo não utilizado nesta simulação: <strong>{{ formatar_cve_exato(resultado.saldo_nao_utilizado) }}</strong>.</p>
+  <p>O orçamento permite {{ resultado.linhas_financiaveis }} linhas pelo preço configurado{% if resultado.limitado_por_teto %}; esta ferramenta aplica o teto de 420 linhas{% endif %}.</p>
+  <p><strong>FATO MATEMÁTICO:</strong> subconjuntos cobertos por CVE de custo simulado: {% if resultado.cobertura_por_cve is not none %}{{ ('%.6f'|format(resultado.cobertura_por_cve)).replace('.', ',') }}{% else %}indisponível — nenhuma linha produzida{% endif %}. É uma medida de cobertura por custo; não é ROI nem probabilidade de prémio.</p>
+  {% endif %}
+  <p>Linhas duplicadas: {{ c.linhas_duplicadas }}. Sobreposição média entre linhas: {{ resultado.metricas.sobreposicao_media }} números. Tempo de construção: {{ resultado.tempo_segundos }} s / {{ resultado.prazo_segundos }} s.</p>
+  <p>{{ resultado.rotulo_construcao }} — {{ resultado.metodo }}. Não foi demonstrada uma solução ótima.</p>
+  <details><summary>Identificação verificável da carteira</summary><p>SHA-256 do conjunto, nível, tamanho das linhas e linhas ordenadas (certificado v{{ c.versao }}):</p><code style="overflow-wrap:anywhere">{{ c.hash_sha256 }}</code><p>O identificador permite comparar certificados; não substitui a verificação de cobertura.</p></details>
+  {% if c.descobertos %}<details><summary>Ver todos os {{ c.descobertos }} subconjuntos descobertos</summary><p>{% for grupo in c.subconjuntos_descobertos %}{{ grupo|join('–') }}{{ '; ' if not loop.last else '' }}{% endfor %}</p></details>{% endif %}
+</section>
+<div class="card"><h2>Linhas de análise</h2><div class="table-wrap"><table><thead><tr><th>Linha</th><th>Números</th></tr></thead><tbody>
+{% for linha in resultado.linhas %}<tr><td>{{ loop.index }}</td><td><div class="number-row">{% for n in linha %}<span class="chip">{{ n }}</span>{% endfor %}</div></td></tr>
+{% else %}<tr><td colspan="2">Nenhuma linha foi concluída dentro do prazo.</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endif %}
+<script>
+  (() => {
+    const modo = document.getElementById('wheel-modo');
+    function atualizarLimite() {
+      for (const tipo of ['linhas', 'orcamento']) {
+        const ativo = modo.value === tipo;
+        document.getElementById('wheel-campo-' + tipo).hidden = !ativo;
+        const campo = document.getElementById('wheel-' + tipo);
+        campo.disabled = !ativo;
+        campo.required = ativo;
+      }
+    }
+    modo.addEventListener('change', atualizarLimite);
+    atualizarLimite();
+  })();
+</script>
+{% endblock %}

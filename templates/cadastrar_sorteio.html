@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="topbar"><div><div class="eyebrow">Sorteio</div><h1>Registar Sorteio</h1><p>Registe o resultado semanal com exactamente 6 números únicos entre 1 e 45. Ao guardar, a estatística é actualizada automaticamente.</p></div></div>
+<div class="card">
+  <form method="post">
+    <div class="form-grid">
+      <div class="form-row"><label>Concurso</label><input type="number" name="concurso" min="1" required></div>
+      <div class="form-row"><label>Data do sorteio</label><input type="text" name="data_sorteio" class="date-br" placeholder="dd/mm/aaaa" inputmode="numeric" pattern="\d{2}/\d{2}/\d{4}" required><small class="hint">Formato português: dd/mm/aaaa.</small></div>
+      {% for i in range(1,7) %}<div class="form-row"><label>Número {{ i }}</label><input type="number" name="n{{ i }}" min="1" max="45" required></div>{% endfor %}
+    </div>
+    <button class="btn mt" type="submit">Guardar sorteio e actualizar estatística</button>
+  </form>
+</div>
+<div class="card mt">
+  <h2>Últimos sorteios</h2>
+  <div class="table-wrap"><table><thead><tr><th>Concurso</th><th>Data</th><th>Números</th></tr></thead><tbody>
+  {% for s in sorteios %}<tr><td>{{ s.concurso }}</td><td>{{ s.data_sorteio|date_br }}</td><td><div class="number-row">{% for i in range(1,7) %}<span class="chip soft">{{ s['n' ~ i] }}</span>{% endfor %}</div></td></tr>{% else %}<tr><td colspan="3">Nenhum sorteio registado.</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+<div class="card mt"><h2>Conferência automática</h2>{% for s in sorteios %}{% set c = conferencias.get(s.concurso, {}) %}<h3>Concurso {{ s.concurso }}</h3>{% if c.jogos_premiados %}{% for jogo in c.jogos_premiados %}<p>Jogo {{ jogo.id }} — {{ jogo.acertos }} acertos: {{ jogo.categorias|join(', ') }}</p>{% endfor %}{% else %}<p>{{ c.jogos_conferidos or 0 }} jogo(s) conferido(s), sem prémio.</p>{% endif %}{% for erro in c.erros %}<p class="hint">Aviso: não foi possível conferir o jogo {{ erro.id }}.</p>{% endfor %}{% else %}<p>Ainda não existem sorteios para conferir.</p>{% endfor %}</div>
+{% endblock %}

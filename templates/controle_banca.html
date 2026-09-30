@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="topbar"><div><div class="eyebrow">Banca</div><h1>Gestão de Banca</h1><p>Controle os gastos, retorno, saldo e ROI em CVE.</p></div></div>
+<div class="grid grid-4">
+  <div class="card"><div class="stat-label">Orçamento comprometido</div><div class="stat-number">{{ format_cve(resumo.orcamento_comprometido) }}</div></div>
+  <div class="card"><div class="stat-label">Gasto real em apostas compradas</div><div class="stat-number">{{ format_cve(resumo.gasto_real_comprado) }}</div></div>
+  <div class="card"><div class="stat-label">Retorno</div><div class="stat-number">{{ format_cve(resumo.retorno) }}</div></div>
+  <div class="card"><div class="stat-label">Saldo</div><div class="stat-number {{ 'kpi-positive' if resumo.saldo >= 0 else 'kpi-negative' }}">{{ format_cve(resumo.saldo) }}</div></div>
+  <div class="card"><div class="stat-label">ROI</div><div class="stat-number">{{ resumo.roi }}%</div></div>
+</div>
+<div class="card mt">
+  <h2>Novo movimento</h2>
+  <form method="post"><div class="form-grid">
+    <div class="form-row"><label>Concurso</label><input type="number" name="concurso"></div>
+    <div class="form-row"><label>Valor do movimento manual</label><input type="number" name="valor_gasto" step="0.01" value="0"></div>
+    <div class="form-row"><label>Valor de retorno</label><input type="number" name="valor_retorno" step="0.01" value="0"></div>
+    <div class="form-row"><label>Observação</label><input type="text" name="observacao"></div>
+  </div><button class="btn mt" type="submit">Guardar movimento</button></form>
+</div>
+<div class="card mt"><h2>Histórico de movimentos manuais</h2><div class="table-wrap"><table><thead><tr><th>Concurso</th><th>Valor do movimento manual</th><th>Retorno</th><th>Lucro/Prejuízo</th><th>Observação</th></tr></thead><tbody>
+{% for l in lancamentos %}<tr><td>{{ l.concurso or '-' }}</td><td>{{ format_cve(l.valor_gasto) }}</td><td>{{ format_cve(l.valor_retorno) }}</td><td>{{ format_cve(l.lucro_prejuizo) }}</td><td>{{ l.observacao or '-' }}</td></tr>{% else %}<tr><td colspan="5">Nenhum movimento.</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

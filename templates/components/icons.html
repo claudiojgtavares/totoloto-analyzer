@@ -1,0 +1,21 @@
+{% macro icon(name) -%}
+{% set paths = {
+ 'dashboard': 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
+ 'estatisticas': 'M4 20h16 M7 16V9 M12 16V4 M17 16v-5',
+ 'importar': 'M12 16V3 M7 8l5-5 5 5 M4 15v5h16v-5',
+ 'sorteios': 'M5 5h14v16H5z M8 3v4 M16 3v4 M5 11h14 M9 15h2 M14 15h1',
+ 'gerar': 'M4 4h16v16H4z M8 8h.01 M16 8h.01 M12 12h.01 M8 16h.01 M16 16h.01',
+ 'wheeling': 'M12 3l9 5v9l-9 4-9-4V8z M3 8l9 5 9-5 M12 13v8 M7 6l10 5v8',
+ 'joker': 'M12 3l8 9-8 9-8-9z M9 12h6 M12 9v6',
+ 'estrategias': 'M4 5h16 M4 12h16 M4 19h16 M8 3v4 M16 10v4 M10 17v4',
+ 'backtesting': 'M3 10a9 9 0 1 1 1 8 M3 4v6h6 M12 7v5l4 2',
+ 'banca': 'M3 5h16v4 M3 5v15h18V9H3 M16 13h5v3h-5z',
+ 'relatorios': 'M6 3h8l4 4v14H6z M14 3v5h4 M9 12h6 M9 16h6',
+ 'configuracoes': 'M4 6h16 M4 12h16 M4 18h16 M8 3v6 M16 9v6 M10 15v6',
+ 'arrow': 'M5 12h14 M14 7l5 5-5 5',
+ 'plus': 'M12 5v14 M5 12h14',
+ 'shield': 'M12 3l8 3v6c0 5-8 9-8 9s-8-4-8-9V6z M8 12l3 3 5-6',
+ 'menu': 'M4 6h16 M4 12h16 M4 18h16'
+} %}
+<svg class="ui-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="{{ paths.get(name, paths.dashboard) }}"/></svg>
+{%- endmacro %}

@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% from 'components/icons.html' import icon %}
+{% block content %}
+<section class="dashboard-hero" aria-labelledby="dashboard-title">
+  <div class="hero-copy">
+    <div class="eyebrow">Totoloto &amp; Joker · Cabo Verde</div>
+    <h1 id="dashboard-title">O seu painel de análise</h1>
+    <p>Acompanhe os concursos, explore o histórico e organize as suas apostas.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="btn" href="{{ url_for('cadastrar_sorteio') }}">{{ icon('plus') }} Registar sorteio</a>
+    <a class="btn secondary" href="{{ url_for('gerar_jogos') }}">{{ icon('gerar') }} Gerar apostas</a>
+    <a class="btn secondary" href="{{ url_for('importar_estatistica') }}">{{ icon('importar') }} Importar estatísticas</a>
+    <a class="btn secondary" href="{{ url_for('backtesting') }}">{{ icon('backtesting') }} Testar estratégia</a>
+  </div>
+</section>
+
+<section class="kpi-grid" aria-label="Resumo do histórico">
+  {% for key, label, caption, glyph in [
+    ('sorteios', 'Concursos registados', 'Histórico Totoloto', 'sorteios'),
+    ('numeros', 'Números com estatística', 'Universo de 1 a 45', 'estatisticas'),
+    ('jogos', 'Apostas geradas', 'Jogos guardados', 'gerar'),
+    ('joker', 'Resultados Joker', 'Histórico de seis dígitos', 'joker')
+  ] %}
+  <div class="kpi-card">
+    <span class="kpi-icon">{{ icon(glyph) }}</span>
+    <div><div class="stat-label">{{ label }}</div><div class="stat-number">{{ resumo[key] or 0 }}</div><div class="kpi-caption">{{ caption }}</div></div>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="dashboard-grid">
+  <article class="card">
+    <div class="section-heading">
+      <div><div class="eyebrow">PADRÃO HISTÓRICO</div><h2>Saídas dos números em destaque</h2><p>Seleção por índice quente; barras com o número de saídas registadas.</p></div>
+      <a class="text-link" href="{{ url_for('estatisticas') }}">Explorar {{ icon('arrow') }}</a>
+    </div>
+    {% if destaques %}
+      {% set scale = namespace(maximum=1) %}
+      {% for n in destaques %}{% set scale.maximum = [scale.maximum, n.numero_saidas|default(0, true)|int]|max %}{% endfor %}
+      <div class="chart-label" aria-hidden="true"><span>Número</span><span>Saídas</span></div>
+      <div class="frequency-chart" role="list" aria-label="Contagens históricas dos números em destaque">
+      {% for n in destaques %}
+        {% set count = n.numero_saidas|default(0, true)|int %}
+        <div class="frequency-row" role="listitem">
+          <span class="chip soft" aria-label="Número {{ n.numero }}">{{ '%02d'|format(n.numero|int) }}</span>
+          <div class="frequency-track" aria-hidden="true"><div class="frequency-bar" style="width: {{ (100 * ([count, 0]|max) / scale.maximum)|round(2) }}%"></div></div>
+          <span class="frequency-count" aria-label="{{ count }} saídas">{{ count }}</span>
+        </div>
+      {% endfor %}
+      </div>
+      <p class="panel-footnote">As barras comparam contagens dentro desta seleção. Frequência e atraso não são previsões.</p>
+    {% else %}
+      <div class="empty-state">{{ icon('estatisticas') }}<strong>A análise começa pelo histórico</strong><span>Registe sorteios ou importe estatísticas para preencher este painel.</span><a class="text-link" href="{{ url_for('importar_estatistica') }}">Importar estatísticas {{ icon('arrow') }}</a></div>
+    {% endif %}
+  </article>
+
+  <article class="card">
+    <div class="section-heading">
+      <div><div class="eyebrow">Organização financeira</div><h2>Orçamento e compras</h2><p>Cada valor tem um período e uma finalidade próprios.</p></div>
+      <a class="text-link" href="{{ url_for('controle_banca') }}">Ver banca {{ icon('arrow') }}</a>
+    </div>
+    <div class="finance-stack">
+      <div class="finance-item">
+        <div class="finance-label">{{ icon('sorteios') }} Orçamento comprometido</div>
+        <div class="finance-value">{{ format_cve(resumo.orcamento_comprometido or 0) }}</div>
+        <small>Semana ISO atual · gerações com utilização de orçamento.</small>
+      </div>
+      <div class="finance-item purchased">
+        <div class="finance-label">{{ icon('banca') }} Gasto real em apostas compradas</div>
+        <div class="finance-value">{{ format_cve(resumo.gasto_real_comprado or 0) }}</div>
+        <small>Todo o histórico · apenas jogos marcados como comprados.</small>
+      </div>
+    </div>
+    <p class="finance-help">Gerar uma combinação não confirma a sua compra. Registe abaixo apenas os jogos efetivamente pagos.</p>
+    <div class="actions mt"><a class="btn secondary" href="{{ url_for('configuracoes') }}">Definir orçamento</a><a class="text-link" href="{{ url_for('controle_banca') }}">Gerir movimentos {{ icon('arrow') }}</a></div>
+  </article>
+</section>
+
+<section class="card mt">
+  <div class="section-heading">
+    <div><div class="eyebrow">A sua carteira</div><h2>Últimas apostas geradas</h2><p>Consulte as combinações e atualize o estado de compra no mesmo local.</p></div>
+    <span class="badge">{{ ultimos_jogos|length }} jogo(s) apresentados</span>
+  </div>
+  {% if ultimos_jogos %}
+  <div class="table-wrap" tabindex="0" role="region" aria-label="Últimas apostas; deslize horizontalmente para ver todas as colunas">
+    <table class="purchase-table">
+      <thead><tr><th>Jogo / data</th><th>Combinação</th><th>Estratégia</th><th>Score técnico</th><th class="numeric">Custo</th><th>Estado</th><th>Ação</th></tr></thead>
+      <tbody>
+      {% for jogo in ultimos_jogos %}
+      <tr>
+        <td><strong>#{{ jogo.id }}</strong><span class="table-date">{{ jogo.created_at|date_br }}</span></td>
+        <td>
+          <div class="number-row">
+            {% for numero in (jogo.numeros|string).split(',') %}<span class="chip soft">{{ numero|trim }}</span>{% endfor %}
+          </div>
+          <span class="table-date">{{ jogo.tipo_aposta }}</span>
+        </td>
+        <td>{{ jogo.estrategia }}</td>
+        <td><span class="score-pill">{{ jogo.score|pct_br }}</span></td>
+        <td class="numeric">{{ format_cve(jogo.custo_final) }}</td>
+        <td><span class="state-badge {{ 'state-purchased' if jogo.comprado else 'state-generated' }}">{{ 'Comprado' if jogo.comprado else 'Apenas gerado' }}</span></td>
+        <td>
+          <form method="post" action="{{ url_for('marcar_jogo_comprado', jogo_id=jogo.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="comprado" value="{{ '0' if jogo.comprado else '1' }}">
+            <button class="btn secondary" type="submit" aria-label="{{ 'Desmarcar compra do jogo' if jogo.comprado else 'Marcar como comprado o jogo' }} {{ jogo.id }}">{{ 'Desmarcar compra' if jogo.comprado else 'Marcar como comprado' }}</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="panel-footnote">HEURÍSTICA · O score é uma nota técnica dos critérios utilizados, não uma probabilidade de ganhar.</p>
+  {% else %}
+    <div class="empty-state">{{ icon('gerar') }}<strong>A sua carteira ainda está vazia</strong><span>Gere combinações para analisar. Pode decidir mais tarde quais pretende comprar.</span><a class="btn secondary" href="{{ url_for('gerar_jogos') }}">Gerar primeiras apostas</a></div>
+  {% endif %}
+</section>
+
+{% if conferencia_ultimo %}
+<section class="card mt">
+  <div class="section-heading">
+    <div><div class="eyebrow">PADRÃO HISTÓRICO</div><h2>Conferência do último sorteio</h2><p>O resultado compara os jogos guardados com os números sorteados; não confirma a compra nem o valor monetário dos prémios.</p></div>
+    <span class="badge">{{ conferencia_ultimo.jogos_conferidos }} jogo(s) conferido(s)</span>
+  </div>
+  {% if conferencia_ultimo.erros %}
+    <p class="notice">Conferência parcial: {{ conferencia_ultimo.erros|length }} jogo(s) não puderam ser avaliados. Consulte a página de sorteios.</p>
+  {% endif %}
+  {% for jogo in conferencia_ultimo.jogos_premiados %}
+    <div class="conference-row"><strong>Jogo {{ jogo.id }}</strong><span>{{ jogo.acertos }} acertos na melhor linha</span><span class="state-badge state-purchased">{{ jogo.categorias|join(', ') }}</span></div>
+  {% else %}
+    <p>Nenhuma categoria de prémio nos {{ conferencia_ultimo.jogos_conferidos }} jogos conferidos.</p>
+  {% endfor %}
+  <a class="text-link" href="{{ url_for('cadastrar_sorteio') }}">Consultar sorteios {{ icon('arrow') }}</a>
+</section>
+{% endif %}
+{% endblock %}

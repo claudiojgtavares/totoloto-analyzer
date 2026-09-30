@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="topbar"><div><div class="eyebrow">Geração</div><h1>Gerar Apostas</h1><p>Geração estatística semanal com filtros e score técnico de 0% a 100%. Score não é probabilidade de ganhar.</p></div></div>
+<div class="grid grid-2">
+  <div class="card">
+    <h2>Configuração</h2>
+    <form method="post">
+      <div class="form-grid">
+        <div class="form-row"><label>Concurso</label><input type="number" name="concurso" min="1" placeholder="Opcional"></div>
+        <div class="form-row"><label>Quantidade de bilhetes</label><input type="number" name="quantidade_jogos" min="1" max="50" value="5" required></div>
+        <div class="form-row"><label>Tipo / números</label><select name="qtd_numeros"><option value="6">Simples - 6 números (1 linha)</option><option value="7">Múltipla - 7 números (7 linhas)</option><option value="8">Múltipla - 8 números (28 linhas)</option><option value="9">Múltipla - 9 números (84 linhas)</option><option value="10">Múltipla - 10 números (210 linhas)</option></select></div>
+        <div class="form-row"><label>Estratégia</label><select name="estrategia">{% for e in estrategias %}<option value="{{ e.nome }}">{{ e.nome }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="form-row mt"><label class="checkbox-line"><input type="checkbox" name="incluir_joker" value="1"> Incluir Joker separado (+{{ format_cve(config.preco_joker or 70) }})</label></div>
+      <div class="form-row mt"><label class="checkbox-line"><input type="checkbox" name="consumir_orcamento" value="1"> Registar como aposta real e consumir orçamento</label><small>Desmarcado: modo análise/simulação; gera números sem consumir o orçamento semanal.</small></div>
+      <div class="notice mt">Custo previsto por bilhete: <strong id="preview-custo" data-preco-aposta="{{ config.preco_aposta_simples or 30 }}" data-preco-joker="{{ config.preco_joker or 70 }}">30 CVE</strong>. O Joker é cobrado uma vez em cada bilhete gerado.</div>
+      <button class="btn mt" type="submit">Gerar estatisticamente</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Filtros usados</h2>
+    <p>Os filtros estruturais são aplicados ao conjunto marcado. Nas múltiplas, a tabela mostra também quantas linhas simples passam pelos mesmos filtros.</p>
+    <p>Também equilibra baixos/altos, zonas 1-15/16-30/31-45, soma total e repetição de último dígito.</p>
+    <p class="notice">Orçamento semanal configurado: <strong>{{ format_cve(config.orcamento_semanal or 0) }}</strong>.</p>
+  </div>
+</div>
+{% if jogos %}
+<div class="card mt">
+  <h2>Apostas geradas</h2>
+  <div class="table-wrap"><table><thead><tr><th>Números</th><th>Tipo</th><th>Estratégia usada</th><th>Linhas simples</th><th>Linhas nos filtros</th><th>Score técnico (%)</th><th>Score cobertura (%)</th><th>Custo</th><th>Joker</th><th>Custo final</th></tr></thead><tbody>
+  {% for jogo in jogos %}<tr><td><div class="number-row">{% for n in jogo.numeros %}<span class="chip">{{ n }}</span>{% endfor %}</div></td><td>{{ jogo.tipo_aposta }}</td><td>{{ jogo.estrategia }}</td><td>{{ jogo.apostas_simples }}</td><td>{{ jogo.linhas_aprovadas_filtros }}/{{ jogo.apostas_simples }} ({{ jogo.percentual_linhas_aprovadas }}%)</td><td>{{ '%.2f'|format(jogo.score|float) }}%</td><td>{{ '%.2f'|format(jogo.score_cobertura|float) }}%</td><td>{{ format_cve(jogo.custo_total) }}</td><td>{{ format_cve(jogo.custo_joker) }}</td><td>{{ format_cve(jogo.custo_final) }}</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% endif %}
+{% endblock %}
