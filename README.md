@@ -53,3 +53,12 @@ Frequency, delay, AI, scores and past history do not increase the odds of a futu
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+
+
+<!-- PUBLICATION-ASSETS:BEGIN -->
+## Application capture
+
+![Totoloto Analyzer offline](docs/images/totoloto-analyzer-offline.png)
+<!-- PUBLICATION-ASSETS:END -->
+
