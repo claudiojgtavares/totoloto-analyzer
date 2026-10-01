@@ -59,6 +59,6 @@ MIT — see [LICENSE](LICENSE).
 <!-- PUBLICATION-ASSETS:BEGIN -->
 ## Application capture
 
-![Totoloto Analyzer offline](docs/images/totoloto-analyzer-offline.png)
+![Totoloto Analyzer offline](docs/images/totoloto-analyzer-offline.webp)
 <!-- PUBLICATION-ASSETS:END -->
 
